@@ -1,29 +1,42 @@
+//NAME: PRITAM MOREY
+//PRN: 22070521134
+
 import gspread
 import random
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
 import time
-# Define the scope and authenticate with Google
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('iot123.json', scope)
-client = gspread.authorize(creds)
+from datetime import datetime
+from oauth2client.service_account import ServiceAccountCredentials
 
-# Open the Google Spreadsheet by title or by key
-spreadsheet = client.open("IoT123")  # or use .open_by_key("your_spreadsheet_key")
+# Google Sheets Authentication
+def authenticate(sheet_name):
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("iot123.json", scope)
+    client = gspread.authorize(creds)
+    return client.open(sheet_name).sheet1
 
-# Select the sheet to work with (e.g., the first sheet)
-sheet = spreadsheet.sheet1
+# Simulate IoT sensor data
+def get_sensor_data():
+    temperature = round(random.uniform(20.0, 35.0), 2)  # in Celsius
+    humidity = round(random.uniform(30.0, 70.0), 2)     # in %
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return [timestamp, temperature, humidity]
 
-#Upload some data (example: adding rows to the sheet)
+# Main logging function
+def log_iot_data(sheet, interval=10, entries=5):
+    sheet.clear()
+    sheet.append_row(["Timestamp", "Temperature (°C)", "Humidity (%)"])  # Header
 
-data = [
-    ["Name", "Age", "City"],
-    ["ABC", str(datetime.now()), "Nagpur"],
-    ["XYZ", "65", "Mumbai"],
-]
+    for _ in range(entries):
+        row = get_sensor_data()
+        sheet.append_row(row)
+        print(f"Logged: {row}")
+        time.sleep(interval)
 
-# Update the sheet with the data
-for row in data:
-    sheet.append_row(row)
-
-print("Data uploaded successfully!")
+# Run
+if __name__ == "__main__":
+    try:
+        sheet = authenticate("IoT123")
+        log_iot_data(sheet, interval=10, entries=5)  # log 5 entries every 10 sec
+        print("All data logged successfully!")
+    except Exception as e:
+        print(f"An error occurred: {e}")
